@@ -1,0 +1,277 @@
+---
+title: "Transgenic height and Symptomatic Percentage Analysis"
+author: "Oil Stone Analytics"
+date: "17/11/2021"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages,  warning=FALSE, message=FALSE}
+
+# Libraries
+#install.packages("tidyverse")
+suppressMessages(suppressWarnings(library(openxlsx)))
+suppressMessages(suppressWarnings(library(readxl)))
+suppressMessages(suppressWarnings(library(summarytools)))
+suppressMessages(suppressWarnings(library(cowplot)))
+  suppressMessages(suppressWarnings(library(DT)))
+suppressMessages(suppressWarnings(library(downloadthis)))
+suppressMessages(suppressWarnings(library(agricolae)))
+suppressMessages(suppressWarnings(library(tidyverse)))
+suppressMessages(suppressWarnings(library(variability)))
+suppressMessages(suppressWarnings(library(performance)))
+```
+
+```{r soga, warning=FALSE, message=FALSE, fig.height = 8, fig.width = 12}
+# Data
+transgenic <- read_excel('C:/Users/NTANDO/Downloads/Transgenic height.xlsx',
+                      sheet = 1) # Load data
+
+
+```
+
+
+# Height
+
+## Descriptives
+
+```{r, warning=FALSE, message=FALSE, fig.height = 8, fig.width = 12}
+# Data
+transgenic$Genotype <- as.factor(transgenic$Genotype) # convert to factors
+transgenic$Month <- as.factor(transgenic$Month) # convert to factors
+transgenic$Rep <- as.factor(transgenic$Rep) # convert to factors
+
+trans_gen <- transgenic %>% #summarize data by Genotype and Rep
+  group_by(Genotype, Rep) %>%
+  summarise(Average = round(mean(Height, 2)), SD = round(sd(Height), 2), N= n())
+
+trans_gen %>% # getting a table of the data
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'lfrtipB',
+                           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+
+
+
+trans_mon <- transgenic %>%
+  group_by(Month, Rep) %>%
+  summarise(Average = round(mean(Height, 2)), SD = round(sd(Height), 2), N= n())
+
+trans_mon %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'lfrtipB',
+                           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+```
+
+## Exploratory Data Analysis
+
+
+```{r , warning=FALSE, message=FALSE, fig.height = 8, fig.width = 12}
+# Data
+trans_gen_mon <- transgenic %>%
+  group_by(Genotype, Month) %>%
+  summarise(Average = mean(Height), SD = round(sd(Height), 2), N= n())
+
+x <- ggplot(trans_gen_mon, aes(x=Month, y= Average, group= Genotype, color= Genotype)) +
+  geom_point(aes(shape= Genotype)) +
+  geom_line(aes(linetype= Genotype)) +theme_bw() + labs(x= "Month", y= "Average Height",
+                                                        title = "Average Height per Month")
+
+x
+download_this(x, button_label = "Download Plot")
+  
+
+trans_gen_mon_1 <- transgenic %>%
+  filter(Rep==1) %>%
+  group_by(Genotype, Month) %>%
+  summarise(Average = mean(Height), SD = round(sd(Height), 2), N= n())
+  
+
+a <- ggplot(trans_gen_mon_1, aes(x=Month, y= Average, group= Genotype, color= Genotype)) +
+  geom_point(aes(shape= Genotype)) +
+  geom_line(aes(linetype= Genotype)) +theme_bw() + labs(x= "Month", y= "Average Height",
+                                                        title = "Average Height per Month: Trial 1")
+
+trans_gen_mon_2 <- transgenic %>%
+  filter(Rep==2) %>%
+  group_by(Genotype, Month) %>%
+  summarise(Average = mean(Height), SD = round(sd(Height), 2), N= n())
+  
+
+b <- ggplot(trans_gen_mon_2, aes(x=Month, y= Average, group= Genotype, color= Genotype)) +
+  geom_point(aes(shape= Genotype)) +
+  geom_line(aes(linetype= Genotype)) +theme_bw() + labs(x= "Month", y= "Average Height",
+                                                        title = "Average Height per Month: Trial 2")
+
+j <- plot_grid(a, b, labels= c('A', 'B'))
+j
+download_this(j, button_label = "Download Plot")
+
+```
+
+
+
+
+
+
+## Model
+
+
+```{r, warning=FALSE, message=FALSE, fig.height = 8, fig.width = 12}
+
+model1 <- aov(Height~ Genotype + Month + Rep, data = transgenic)
+summary(model1)
+par(mfrow=c(2,2))
+plot(model1)
+par(mfrow=c(1,1))
+
+
+TukeyHSD(model1, "Genotype", ordered = TRUE)
+
+TukeyHSD(model1, "Month", ordered = TRUE)
+
+t.test(Height ~ Rep, data= transgenic, var.equal= TRUE)
+
+```
+
+# Percentage
+
+```{r so,  warning=FALSE, message=FALSE, fig.height = 8, fig.width = 12}
+# Data
+symptomatic<- read_excel('C:/Users/NTANDO/Downloads/Symptomatic percentage.xlsx',
+                      sheet = 1)
+
+
+```
+
+
+## Descriptives
+
+```{r ,  warning=FALSE, message=FALSE, fig.height = 8, fig.width = 12}
+# Data
+symptomatic$Genotype <- as.factor(symptomatic$Genotype)
+symptomatic$Time <- as.factor(symptomatic$Time)
+symptomatic$Rep <- as.factor(symptomatic$Rep)
+
+symptomatic_gen <- symptomatic %>%
+  group_by(Genotype, Rep) %>%
+  summarise(Average = round(mean(Percentage, 2)), SD = round(sd(Percentage), 2), N= n())
+
+symptomatic_gen %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'lfrtipB',
+                           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+
+
+
+symptomatic_time <- symptomatic %>%
+  group_by(Time, Rep) %>%
+  summarise(Average = round(mean(Percentage, 2)), SD = round(sd(Percentage), 2), N= n())
+
+symptomatic_time %>%
+  datatable(extensions = 'Buttons',
+            options = list(dom = 'lfrtipB',
+                           buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                           lengthMenu = list(c(10,25,50,-1),
+                                             c(10,25,50,"All"))))
+
+```
+
+## Exploratory Data Analysis
+
+
+```{r ,  warning=FALSE, message=FALSE, fig.height = 8, fig.width = 12}
+# Data
+symptomatic_gen_mon <- symptomatic %>%
+  group_by(Genotype, Time) %>%
+  summarise(Average = mean(Percentage), SD = round(sd(Percentage), 2), N= n())
+
+x <- ggplot(symptomatic_gen_mon, aes(x=Time, y= Average, group= Genotype, color= Genotype)) +
+  geom_point(aes(shape= Genotype)) +
+  geom_line(aes(linetype= Genotype)) +theme_bw() + labs(x= "Time", y= "Average Percentage",
+                                                        title = "Average Percentage per days post innoculation")
+
+x
+download_this(x, button_label = "Download Plot")
+  
+
+symptomatic_gen_mon_1 <- symptomatic %>%
+  filter(Rep==1) %>%
+  group_by(Genotype, Time) %>%
+  summarise(Average = mean(Percentage), SD = round(sd(Percentage), 2), N= n())
+  
+
+a <- ggplot(symptomatic_gen_mon_1, aes(x=Time, y= Average, group= Genotype, color= Genotype)) +
+  geom_point(aes(shape= Genotype)) +
+  geom_line(aes(linetype= Genotype)) +theme_bw() + labs(x= "Time", y= "Average Percentage",
+                                                        title = "Average Percentage per days post innoculation: Trial 1")
+
+symptomatic_gen_mon_2 <- symptomatic %>%
+  filter(Rep==2) %>%
+  group_by(Genotype, Time) %>%
+  summarise(Average = mean(Percentage), SD = round(sd(Percentage), 2), N= n())
+  
+
+b <- ggplot(symptomatic_gen_mon_2, aes(x=Time, y= Average, group= Genotype, color= Genotype)) +
+  geom_point(aes(shape= Genotype)) +
+  geom_line(aes(linetype= Genotype)) +theme_bw() + labs(x= "Time", y= "Average Percentage",
+                                                        title = "Average Percentage per days post innoculation: Trial 2")
+
+j <- plot_grid(a, b, labels= c('A', 'B'))
+j
+download_this(j, button_label = "Download Plot")
+
+```
+
+
+
+
+
+
+## Model
+
+
+```{r ,  warning=FALSE, message=FALSE, fig.height = 8, fig.width = 12}
+
+model2 <- aov(Percentage~ Genotype + Time + Rep, data = symptomatic) #linear model
+summary(model2) #summary of model
+par(mfrow=c(2,2))
+plot(model1)
+par(mfrow=c(1,1))
+
+
+TukeyHSD(model2, "Genotype", ordered = TRUE) # Ad Hoc analysis
+
+TukeyHSD(model2, "Time", ordered = TRUE) # Ad Hoc analysis
+
+t.test(Percentage ~ Rep, data= symptomatic, var.equal= TRUE) # T Test
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
